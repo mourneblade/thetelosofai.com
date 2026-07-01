@@ -29,30 +29,57 @@
   var voices = [];
   var queue = [], i = 0, playing = false, paused = false;
 
-  /* ---- voices ---- */
+  /* ---- voices ----
+     Voice availability varies wildly by device. Desktop Windows has David/Zira;
+     a phone may expose only ONE english voice. So: de-dupe, only show the switch
+     when there are 2 genuinely DISTINCT voices, and label them so they never
+     collide (gender when detectable, else a cleaned name, else "Voice 1/2"). */
+  function genderOf(v) {
+    var n = v.name.toLowerCase();
+    if (/(zira|female|samantha|susan|aria|jenny|karen|moira|tessa|fiona|nicky|catherine|serena|kate|hazel|heera|linda|eva|michelle|allison|ava|joanna|salli|kimberly)/.test(n)) return 'Female';
+    if (/(david|male|mark|guy|george|james|ryan|daniel|alex|fred|tom|aaron|arthur|oliver|gordon|matthew|joey|brian)/.test(n)) return 'Male';
+    return null;
+  }
+  function cleanName(v) {
+    return (v.name
+      .replace(/^(Microsoft|Google|Apple)\s+/i, '')
+      .replace(/\s*\([^)]*\)\s*$/, '')
+      .replace(/\s+English.*$/i, '')
+      .trim()) || v.name;
+  }
   function loadVoices() {
     var all = synth.getVoices();
     if (!all.length) return false;
     var en = all.filter(function (v) { return /^en/i.test(v.lang); });
-    if (!en.length) en = all;
-    var female = en.filter(function (v) { return /(zira|female|aria|jenny|susan|samantha|hazel|eva|michelle|linda|heera|catherine)/i.test(v.name); })[0];
-    var male = en.filter(function (v) { return /(david|male|mark|guy|george|james|ryan|daniel|alex|fred|tom)/i.test(v.name); })[0];
-    var a = male || en[0];
-    var b = female || en.filter(function (v) { return v !== a; })[0] || null;
-    voices = b ? [a, b] : [a];
+    var pool = en.length ? en : all;
+    // de-dupe so the same voice can never appear twice
+    var seen = {}, uniq = [];
+    pool.forEach(function (v) { var k = v.voiceURI || v.name; if (!seen[k]) { seen[k] = 1; uniq.push(v); } });
+    // Prefer a plain male-ish default first, then a female; otherwise the first two distinct voices.
+    var males = uniq.filter(function (v) { return genderOf(v) === 'Male'; });
+    var females = uniq.filter(function (v) { return genderOf(v) === 'Female'; });
+    var pick = (males.length && females.length) ? [males[0], females[0]] : uniq.slice(0, 2);
+    voices = [];
+    pick.forEach(function (v) { if (v && voices.indexOf(v) < 0) voices.push(v); });
+    if (settings.voice >= voices.length) settings.voice = 0;
     return true;
   }
-  function shortName(v) { return v.name.replace(/^(Microsoft|Google)\s+/i, '').split(/[ (]/)[0]; }
+  function voiceLabels() {
+    var labels = voices.map(function (v) { return genderOf(v) || cleanName(v); });
+    if (voices.length === 2 && labels[0] === labels[1]) labels = ['Voice 1', 'Voice 2'];
+    return labels;
+  }
   function renderVoices() {
     if (!voiceWrap) return;
     voiceWrap.innerHTML = '';
-    if (voices.length < 2) return; // only one voice — no switch to show
+    if (voices.length < 2) return; // 0 or 1 distinct voice — no real choice, so no switch
     var lab = document.createElement('span'); lab.className = 'pl-lab'; lab.textContent = 'Voice'; lab.style.marginRight = '2px';
     voiceWrap.appendChild(lab);
     var seg = document.createElement('span'); seg.className = 'pl-seg';
+    var labels = voiceLabels();
     voices.forEach(function (v, idx) {
       var b = document.createElement('button');
-      b.type = 'button'; b.textContent = shortName(v);
+      b.type = 'button'; b.textContent = labels[idx];
       if (idx === settings.voice) b.className = 'on';
       b.addEventListener('click', function () {
         settings.voice = idx;
