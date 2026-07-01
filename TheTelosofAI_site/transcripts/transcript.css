@@ -1,0 +1,120 @@
+/* Shared styles for the transcripts subsystem — palette + type match the main site.
+   Generated pages (index.html and each <slug>/index.html) link this file. */
+:root{
+  --paper:#ece4d5; --paper-deep:#e4dac7; --ink:#2c2519; --ink-soft:#6a5f4b;
+  --cream:#efe9dc; --sun:#bd6e32; --sun-deep:#a3591f; --gem:#7c9446;
+  --gem-deep:#5e7333; --gold:#c39e44; --earth:#211b12; --rule:#cbbfa8;
+  --display:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --body:'Spectral',Georgia,'Times New Roman',serif;
+  --content:min(60rem,100%);
+  --gutter:clamp(1.5rem,5vw,4rem);
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+  background:var(--paper); color:var(--ink); font-family:var(--body);
+  font-size:clamp(1.02rem,0.55vw + 0.95rem,1.15rem); line-height:1.7;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+a{ color:var(--sun-deep); text-underline-offset:.18em; text-decoration-thickness:.5px; }
+a:hover{ color:var(--sun); }
+:focus-visible{ outline:2.5px solid var(--gem-deep); outline-offset:3px; border-radius:2px; }
+
+/* ---- top bar ---- */
+.top{ padding:1.5rem var(--gutter); border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.mark{ font-family:var(--display); font-weight:600; letter-spacing:.09em; font-size:1.3rem; color:var(--ink); text-decoration:none; }
+.mark:hover{ color:var(--sun-deep); }
+.top .up{ font-family:var(--body); font-size:.82rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); text-decoration:none; }
+.top .up:hover{ color:var(--sun-deep); }
+main{ flex:1; }
+
+/* ============ INDEX ============ */
+.index-head{ padding:clamp(2.6rem,7vw,4.5rem) var(--gutter) 1rem; }
+.eyebrow{ font-size:.74rem; font-weight:500; letter-spacing:.32em; text-transform:uppercase; color:var(--sun-deep); margin:0 0 1rem; }
+.index-head h1{ font-family:var(--display); font-weight:600; font-size:clamp(2.4rem,6vw,3.6rem); line-height:1.03; margin:0 0 .7rem; }
+.index-head .lede{ font-style:italic; font-weight:300; color:var(--ink-soft); max-width:34rem; margin:0; font-size:1.1rem; }
+.ep-list{ padding:1rem var(--gutter) 2rem; max-width:52rem; }
+.ep-row{ display:flex; align-items:baseline; gap:1.1rem; padding:1.15rem 0; border-top:1px solid var(--rule); text-decoration:none; color:inherit; }
+.ep-row:hover .ep-title{ color:var(--sun-deep); }
+.ep-num{ font-family:var(--display); font-size:1.15rem; color:var(--sun-deep); min-width:2.2rem; }
+.ep-body{ flex:1; }
+.ep-title{ font-family:var(--display); font-weight:600; font-size:clamp(1.35rem,2.6vw,1.65rem); line-height:1.14; margin:0; transition:color .15s; }
+.ep-hook{ font-style:italic; font-weight:300; color:var(--ink-soft); font-size:1rem; margin:.15rem 0 0; }
+.ep-go{ margin-left:auto; white-space:nowrap; font-family:var(--display); font-size:1rem; font-weight:600; color:var(--gem-deep); align-self:center; }
+
+/* ============ EPISODE PAGE ============ */
+/* Hero: the full (uncropped) 16:9 photo sits at a fixed height on a brown band,
+   centred and framed. When the source image has no baked-in text (has-overlay),
+   we draw the episode label + title (upper right) and a "THE TELOS OF AI"
+   watermark (lower left) as crisp Cormorant text on the photo. */
+.hero{ background:var(--earth); height:clamp(190px,32vw,320px); overflow:hidden;
+  display:flex; align-items:center; justify-content:center; position:relative; }
+.hero-fig{ position:relative; height:100%; max-width:100%; }
+.hero-fig .cover{ height:100%; width:auto; max-width:100%; display:block; }
+
+.hero.has-overlay .hero-fig::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(205deg, rgba(15,11,7,.66) 0%, rgba(15,11,7,0) 46%),
+    linear-gradient(20deg,  rgba(15,11,7,.55) 0%, rgba(15,11,7,0) 30%);
+}
+.hero .htext{ position:absolute; top:clamp(.7rem,2vw,1.3rem); right:clamp(.9rem,2.4vw,1.6rem); z-index:1; text-align:right; max-width:82%; }
+.hero .ep{ font-family:var(--display); font-weight:500; color:var(--cream); line-height:1; margin:0 0 .12em;
+  font-size:clamp(1.3rem,2.7vw,1.95rem); text-shadow:0 2px 14px rgba(0,0,0,.6); }
+.hero h1{ font-family:var(--display); font-weight:600; color:var(--cream); line-height:1.02; margin:0;
+  font-size:clamp(1.35rem,2.8vw,2rem); text-shadow:0 2px 16px rgba(0,0,0,.55); }
+.hero .wm{ position:absolute; left:clamp(.9rem,2.4vw,1.6rem); bottom:clamp(.6rem,1.8vw,1rem); z-index:1;
+  font-family:var(--display); font-weight:600; letter-spacing:.16em; font-size:clamp(.7rem,1.4vw,.92rem);
+  color:rgba(239,233,220,.94); text-shadow:0 1px 10px rgba(0,0,0,.65); }
+/* If a source image ever has text baked in, keep the h1/label in the DOM for SEO
+   but hide them visually so nothing double-prints. */
+.hero.is-baked .htext, .hero.is-baked .wm{
+  position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+.meta{ max-width:var(--content); padding:1.2rem var(--gutter) .2rem; color:var(--ink-soft); font-style:italic; font-size:.98rem; }
+.meta .dot{ color:var(--rule); padding:0 .4em; }
+
+/* ---- read-aloud player ---- */
+.ttoa-player{ display:flex; align-items:center; flex-wrap:wrap; gap:12px 14px; max-width:var(--content);
+  margin:1.2rem var(--gutter) 0; background:var(--paper-deep); border:1px solid var(--rule); border-radius:7px; padding:12px 15px; }
+.ttoa-player .pp{ flex-shrink:0; width:42px; height:42px; border-radius:50%; border:1px solid var(--ink-soft);
+  background:transparent; color:var(--ink); cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; transition:background .15s,border-color .15s; }
+.ttoa-player .pp:hover{ background:rgba(44,37,25,.07); border-color:var(--ink); }
+.ttoa-player .pp:disabled{ opacity:.5; cursor:default; }
+.pl-text{ line-height:1.35; }
+.pl-title{ display:block; font-size:.95rem; color:var(--ink); font-weight:500; }
+.pl-note{ display:block; font-size:.82rem; color:var(--ink-soft); }
+.pl-note a{ color:var(--sun-deep); }
+.pl-controls{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+.pl-lab{ font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); }
+.pl-seg{ display:inline-flex; border:1px solid var(--rule); border-radius:20px; overflow:hidden; background:rgba(255,255,255,.25); }
+.pl-seg button, .pl-chip{ border:0; background:transparent; font-family:var(--body); font-size:.8rem; padding:5px 11px; cursor:pointer; color:var(--ink-soft); }
+.pl-seg button+button{ border-left:1px solid var(--rule); }
+.pl-seg button.on{ background:var(--sun); color:var(--cream); }
+.pl-chip{ border:1px solid var(--rule); border-radius:20px; background:rgba(255,255,255,.25); }
+.pl-chip.on{ background:var(--gem); color:var(--cream); border-color:var(--gem); }
+
+/* ---- transcript body ---- */
+.transcript{ max-width:var(--content); padding:1.6rem var(--gutter) 1rem; }
+.turn{ margin:0 0 1.5rem; padding:.2rem .7rem; border-left:2px solid transparent; transition:background .2s; }
+.turn.host{ border-left-color:var(--sun); }
+.turn.guest{ border-left-color:var(--gem); }
+.turn.speaking{ background:rgba(189,110,50,.12); }
+.spk{ font-family:var(--body); font-weight:500; font-size:.72rem; letter-spacing:.2em; text-transform:uppercase; margin:0 0 .3rem; }
+.turn.host .spk{ color:var(--sun-deep); }
+.turn.guest .spk{ color:var(--gem-deep); }
+.para{ margin:0 0 .7rem; }
+.para:last-child{ margin-bottom:0; }
+.back{ max-width:var(--content); padding:1rem var(--gutter) 2.5rem; }
+
+/* ============ FOOTER ============ */
+footer{ background:var(--earth); color:#c9c0ad; padding:2.2rem var(--gutter); font-size:.92rem; }
+.foot-links{ font-family:var(--display); font-size:1.05rem; letter-spacing:.02em; margin:0 0 .8rem; }
+footer a{ color:var(--gold); }
+footer a:hover{ color:#e3c272; }
+.foot-meta{ font-size:.82rem; letter-spacing:.04em; color:#8c8169; margin:0; }
+
+@media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } .turn{ transition:none; } }

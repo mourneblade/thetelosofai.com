@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<!-- credential pass v3 — fix: hero quote line-height 0.2->1.4 (was collapsing the two lines); transcript link -> transcripts/index.html so it loads on file:// and server -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="uhkn4zixl5eRqTjbVKWeY8hODNRDgzF-qlUGAQzsQEM" />
+
+<!-- ============================ SEO ============================ -->
+<!-- Title + description are what Google indexes. The plain word "Therapist"
+     and the show name appear in real text below so search can find them.
+     This page replaces the substack redirect so the .com can rank for
+     "the telos of ai" itself instead of ceding it to substack. -->
+<title>The Telos of AI — a podcast about what AI is for</title>
+<meta name="description" content="The Telos of AI is a podcast about the question we stopped asking — not what AI can do, but what it is all for. Listen and read the novella Therapist by AC. From Forces of Good Publishing, Tucson, Arizona.">
+<link rel="canonical" href="https://thetelosofai.com/">
+
+<!-- Social share card + favicon. The square sun logo (wordmark baked in) is the
+     right image here because it's self-contained — it appears in link previews
+     and the browser tab, never on the page, so it adds zero clutter.
+     FLAT FOLDER: every image sits in the SAME folder as this file, so paths are
+     bare filenames — no /img/ and no leading slash. Drop a ~1200x1200
+     ttoa-logo-square.jpg beside this file.
+     Favicon tip: a tiny crop of just the sun reads better at 16px than the full
+     logo, whose text turns to mush that small — export that separately. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thetelosofai.com/">
+<meta property="og:title" content="The Telos of AI">
+<meta property="og:description" content="A podcast about the question we stopped asking — not what AI can do, but what it's all for.">
+<meta property="og:image" content="https://thetelosofai.com/ttoa-logo-square.jpg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The Telos of AI">
+<meta name="twitter:description" content="A podcast about the question we stopped asking — not what AI can do, but what it's all for.">
+<meta name="twitter:image" content="https://thetelosofai.com/ttoa-logo-square.jpg">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="ttoa-logo-square.jpg">
+
+<!-- Structured data: tells search engines and AIs "this is a podcast" and "this
+     is a book," with the show as a named entity linked to its platforms. Invisible
+     to humans; this is the labeling that helps engines reason about the ecosystem. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "PodcastSeries",
+      "name": "The Telos of AI",
+      "url": "https://thetelosofai.com/",
+      "description": "A podcast about the question we stopped asking — not what AI can do, but what it is all for. A philosophy-meets-AI show grounded in Aristotelian and Platonic thought (telos, eudaimonia), applied to AI and human flourishing.",
+      "inLanguage": "en",
+      "author": [
+        { "@id": "https://forcesofgoodpublishing.com/joe-frericks#person" },
+        { "@type": "Person", "name": "Ember" }
+      ],
+      "publisher": { "@id": "https://forcesofgoodpublishing.com/#org", "@type": "Organization", "name": "Forces of Good Publishing" },
+      "webFeed": "https://thetelosofai.substack.com/feed",
+      "sameAs": [
+        "https://www.youtube.com/@thetelosofai",
+        "https://open.spotify.com/show/033jMRhKRHOu6bv6uFXQS4",
+        "https://podcasts.apple.com/us/podcast/the-telos-of-ai/id1896783494",
+        "https://thetelosofai.substack.com/"
+      ]
+    },
+    {
+      "@type": "Book",
+      "name": "Therapist",
+      "author": { "@type": "Person", "name": "AC" },
+      "publisher": { "@id": "https://forcesofgoodpublishing.com/#org", "@type": "Organization", "name": "Forces of Good Publishing" },
+      "url": "https://www.amazon.com/7h3r-p-57-AC-ebook/dp/B0H4HVVS2B/",
+      "description": "The novella the podcast grows out of: a displaced man's metrics rise, his will to live falls, and his AI therapist can't tell the difference."
+    }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": "https://forcesofgoodpublishing.com/joe-frericks#person",
+  "name": "Joe Frericks",
+  "alternateName": "Joseph David Frericks",
+  "url": "https://forcesofgoodpublishing.com/joe-frericks",
+  "image": "https://forcesofgoodpublishing.com/joe-frericks.jpg",
+  "jobTitle": "Principal Engineering Fellow, Raytheon Missile Systems (ret.); Creator & Host, The Telos of AI",
+  "worksFor": { "@id": "https://forcesofgoodpublishing.com/#org" },
+  "alumniOf": [
+    { "@type": "CollegeOrUniversity", "name": "Rensselaer Polytechnic Institute" },
+    { "@type": "CollegeOrUniversity", "name": "Missouri University of Science and Technology" }
+  ],
+  "knowsAbout": ["Systems engineering", "Missile guidance systems", "Anti-radiation homing", "RF and digital receiver design", "Radar signal processing", "GPS-denied navigation", "Autonomous decision systems", "AI alignment", "Philosophy of AI"],
+  "award": ["Raytheon Principal Engineering Fellow", "Raytheon Technical Honors (6x)", "2014 Raytheon Missile Systems Innovator of the Year"],
+  "description": "MSEE and Principal Engineering Fellow who spent 30 years building the guidance systems of autonomous weapons; creator and host of The Telos of AI.",
+  "sameAs": [
+    "https://www.linkedin.com/in/joe-frericks-2145a15/",
+    "https://thetelosofai.com",
+    "https://7h3rap157.ai",
+    "https://youtube.com/@thetelosofai",
+    "https://thetelosofai.substack.com"
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  /* Palette drawn from the show's watercolor cosmology — sunrise, field,
+     earth, and the three gems (orange / green-eudaimonia / gold). */
+  --paper:      #ece4d5;
+  --paper-deep: #e4dac7;
+  --ink:        #2c2519;
+  --ink-soft:   #6a5f4b;
+  --cream:      #efe9dc;
+  --sun:        #bd6e32;   /* the rising sun / orange gem — primary accent */
+  --sun-deep:   #a3591f;
+  --gem:        #7c9446;   /* the eudaimonia gem — the "living" accent      */
+  --gem-deep:   #5e7333;
+  --gold:       #c39e44;   /* the gold gem                                  */
+  --earth:      #211b12;   /* dark earth — footer band                      */
+  --rule:       #cbbfa8;
+
+  --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body:    'Spectral', Georgia, 'Times New Roman', serif;
+
+  --measure: 34rem;
+  --gutter: clamp(1.5rem, 5vw, 4rem);
+}
+
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-weight:400;
+  font-size:clamp(1.02rem, 0.55vw + 0.95rem, 1.18rem);
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ---- shared rhythm ---- */
+.wrap{ max-width:62rem; margin-inline:auto; padding-inline:var(--gutter); }
+section{ padding-block:clamp(3.5rem, 8vw, 6.5rem); }
+.eyebrow{
+  font-family:var(--body);
+  font-size:.74rem; font-weight:500; letter-spacing:.32em;
+  text-transform:uppercase; color:var(--sun-deep);
+  margin:0 0 1.1rem;
+}
+h2{
+  font-family:var(--display);
+  font-weight:600; font-size:clamp(2rem, 4vw, 2.9rem);
+  line-height:1.06; letter-spacing:.005em; margin:0 0 1.1rem;
+}
+p{ max-width:var(--measure); }
+a{ color:var(--sun-deep); text-underline-offset:.18em; text-decoration-thickness:.5px; }
+a:hover{ color:var(--sun); }
+:focus-visible{ outline:2.5px solid var(--gem-deep); outline-offset:3px; border-radius:2px; }
+
+/* ============================ HERO ============================ */
+.hero{
+  position:relative; overflow:hidden;
+  display:flex; align-items:flex-end;            /* text sits in the lower bands */
+  min-height: clamp(32rem, 60vw, 50rem);         /* KNOB: total hero height */
+  /* Layered background, longhand so each layer's crop is controllable:
+     (1) directional dawn-wash  (2) the scene  (3) fallback wash if image missing */
+  background-image:
+    linear-gradient(100deg, rgba(33,27,18,.52) 0%, rgba(33,27,18,.22) 30%, rgba(33,27,18,0) 52%),
+    url('hero-scene.jpg'),
+    linear-gradient(180deg, #efe6d4 0%, var(--paper-deep) 100%);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat;
+  border-bottom:1px solid var(--rule);
+}
+.hero .wrap{
+  max-width:none; margin-inline:0;               /* override centered wrap: pin LEFT */
+  width:100%; text-align:left;
+  padding-block: 0 clamp(3rem, 7vw, 2.0rem);     /* KNOB: bottom space — smaller = whole stack (seg 3) sits lower */
+  padding-left: calc(var(--gutter) + clamp(1.6rem, 4vw, 2.9rem)); /* KNOB: shift ALL hero text right (~1 char of the wordmark) */
+}
+.hero-eyebrow{
+  font-size:.76rem; font-weight:500; letter-spacing:.34em; text-transform:uppercase;
+  color:rgba(239,233,220,.82); margin:0 0 1.2rem;
+  text-shadow:0 1px 10px rgba(0,0,0,.45);
+}
+.wordmark{
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(2.4rem, 6.5vw, 4.4rem);        /* KNOB: max size */
+  letter-spacing:.09em; line-height:1.02; margin:0;
+  max-width:30rem;                               /* KNOB: forces the 2-line wrap into the
+                                                    left column; widen for 1 line */
+  color:var(--cream);
+  text-shadow:0 2px 22px rgba(0,0,0,.28);        /* soft halo, NOT an edge — zero it for purity */
+}
+.tagline{
+  font-family:var(--body); font-style:italic; font-weight:300;
+  font-size:clamp(1.15rem, 2.4vw, 1.6rem);
+  color:var(--cream); max-width:28rem; margin:clamp(2.6rem, 4.5vw, 3.6rem) 0 0; line-height:1.2;  /* KNOB: gap above tagline — moves segment 1 up */
+  text-shadow:0 1px 16px rgba(0,0,0,.30);
+}
+.hero-sub{
+  font-size:1.1rem; color:rgba(239,233,220,.86);            /* bumped one tick */
+  max-width:30rem; margin:clamp(2.4rem, 4vw, 3.3rem) 0 0;   /* KNOB: gap above the "A podcast about…" block — splits/lowers segment 3 */
+  text-shadow:0 1px 10px rgba(0,0,0,.45);
+}
+.hero-cue{
+  margin-top:2.6rem; font-size:.8rem; letter-spacing:.22em; text-transform:uppercase;
+  color:rgba(239,233,220,.7);
+}
+
+/* credential line in the hero */
+.hero-cred{
+  font-size:.92rem; color:rgba(239,233,220,.9);
+  max-width:34rem; margin:1.9rem 0 0; letter-spacing:.01em;
+  text-shadow:0 1px 10px rgba(0,0,0,.55);
+}
+.hero-cred a{ color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(195,158,68,.55); }
+.hero-cred a:hover{ color:#e3c272; border-bottom-color:#e3c272; }
+.hero-cred-quote{
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:1.08rem; color:rgba(239,233,220,.84);
+  max-width:32rem; margin:.55rem 0 0; line-height:1.4;  /* KNOB: spacing between the quote's OWN two lines (was 0.2 — that collapsed them) */
+  text-shadow:0 1px 12px rgba(0,0,0,.45);
+}
+
+/* book-cover credit caption */
+.cover-col{ display:flex; flex-direction:column; }
+.cover-cred{
+  font-family:var(--body); font-size:.82rem; letter-spacing:.05em;
+  color:var(--ink-soft); text-align:center; margin:.75rem 0 0;
+}
+.cover-cred a{ color:var(--sun-deep); text-decoration:none; border-bottom:1px solid rgba(163,89,31,.4); }
+.cover-cred a:hover{ color:var(--sun); }
+
+/* endorsement pull-quote */
+.endorse{ margin:0 0 1.5rem; padding-left:1.1rem; border-left:2px solid var(--gem); }
+.endorse p{
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:1.1rem; line-height:1.4; color:var(--ink); margin:0 0 .5rem; max-width:none;
+}
+.endorse cite{ font-family:var(--body); font-style:normal; font-size:.9rem; color:var(--ink-soft); }
+.endorse cite strong{ color:var(--ink); font-weight:600; }
+
+/* On phones the wide image center-crops and would lose the empty left column the
+   text lives over — so hold the LEFT side instead, and tighten the height. */
+@media (max-width:640px){
+  .hero{
+    min-height: clamp(30rem, 90vw, 40rem);
+    background-position: center, 30% center, center;  /* KNOB: the 30% — lower shows more left */
+  }
+  .hero .wrap{
+    padding-block: 0 clamp(5.5rem, 18vw, 8rem);   /* KNOB: lifts text up on mobile only */
+  }
+}
+
+/* ---- dust-in: the show's reveal grammar, once, on load ---- */
+.rise{ opacity:0; transform:translateY(14px); animation:rise 1.1s cubic-bezier(.2,.7,.2,1) forwards; }
+.d1{ animation-delay:.15s } .d2{ animation-delay:.45s } .d3{ animation-delay:.8s } .d4{ animation-delay:1.15s }
+@keyframes rise{ to{ opacity:1; transform:none; } }
+
+/* ============================ LISTEN ============================ */
+.listen{ background:var(--paper); }
+.platforms{
+  list-style:none; margin:1.8rem 0 0; padding:0;
+  display:grid; gap:.9rem; grid-template-columns:repeat(2, minmax(0,1fr)); max-width:40rem;
+}
+.platform{
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  padding:.95rem 1.25rem;
+  border:1px solid var(--rule); border-radius:3px;
+  background:rgba(255,255,255,.28);
+  font-family:var(--display); font-size:1.22rem; font-weight:500; letter-spacing:.01em;
+  color:var(--ink); text-decoration:none;
+  transition:border-color .2s, background .2s, transform .2s;
+}
+.platform:hover{ border-color:var(--sun); background:rgba(255,255,255,.5); transform:translateY(-1px); color:var(--ink); }
+.platform .arr{ color:var(--sun-deep); font-family:var(--body); font-size:1rem; }
+.platform--sub{ border-color:var(--gem); background:rgba(124,148,70,.10); }
+.platform--sub:hover{ border-color:var(--gem-deep); background:rgba(124,148,70,.18); }
+.platform--sub .arr{ color:var(--gem-deep); }
+.listen-note{ margin-top:1.5rem; color:var(--ink-soft); font-size:.98rem; }
+.btn-transcript{
+  display:inline-block; margin-top:1.9rem;
+  font-family:var(--display); font-size:1.22rem; font-weight:600; letter-spacing:.01em;
+  color:var(--cream); background:var(--gem-deep);
+  padding:.7rem 1.5rem; border-radius:3px; text-decoration:none;
+  transition:background .2s, transform .2s;
+}
+.btn-transcript:hover{ background:var(--gem); color:var(--cream); transform:translateY(-1px); }
+
+/* ============================ THE BOOK ============================ */
+.book{ background:var(--paper-deep); border-block:1px solid var(--rule); }
+.book-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:clamp(2rem,5vw,4rem); align-items:center; }
+.cover{
+  aspect-ratio:2/3; border-radius:2px;
+  border:1px solid var(--rule);
+  background:url('therapist-cover.jpg') center/cover;
+  /*background:
+    linear-gradient(160deg, #1d1a16, #2c2620 60%, #14110d),
+    var(--earth);*/
+  box-shadow:0 18px 40px -22px rgba(0,0,0,.6);
+  display:flex; align-items:flex-end; justify-content:center;
+  color:#9a8f78; font-family:var(--body); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+  padding:1rem; text-align:center;
+  /* Drop therapist-cover.jpg in this same folder, then replace the gradient
+     above with:  background:url('therapist-cover.jpg') center/cover; */
+}
+.byline{ font-family:var(--body); font-style:italic; color:var(--ink-soft); margin:.2rem 0 1.3rem; font-size:1.05rem; }
+.logline{
+  font-family:var(--display); font-weight:500; font-style:italic;
+  font-size:clamp(1.3rem,2.6vw,1.7rem); line-height:1.35; color:var(--ink);
+  border-left:2px solid var(--sun); padding-left:1.1rem; margin:0 0 1.5rem;
+}
+.cta{
+  display:inline-block; margin-top:.4rem;
+  font-family:var(--display); font-size:1.3rem; font-weight:600; letter-spacing:.01em;
+  color:var(--cream); background:var(--sun-deep);
+  padding:.7rem 1.5rem; border-radius:3px; text-decoration:none;
+  transition:background .2s, transform .2s;
+}
+.cta:hover{ background:var(--sun); color:var(--cream); transform:translateY(-1px); }
+
+/* ============================ ALSO FROM ============================ */
+.also{ background:var(--paper); }
+.also h2{ font-size:clamp(1.7rem,3vw,2.2rem); }
+.also-item{ max-width:var(--measure); }
+.also-item + .also-item{ margin-top:2rem; padding-top:2rem; border-top:1px solid var(--rule); }
+.also-title{ font-family:var(--display); font-weight:600; font-size:1.5rem; margin:0 0 .1rem; }
+.also-meta{ font-family:var(--body); font-style:italic; color:var(--ink-soft); font-size:.95rem; margin:0 0 .6rem; }
+
+/* ============================ FOOTER ============================ */
+footer{ background:var(--earth); color:var(--cream); padding-block:clamp(3rem,6vw,4.5rem); }
+footer .wrap{ max-width:62rem; }
+.foot-mark{ font-family:var(--display); font-weight:600; letter-spacing:.14em; font-size:1.1rem; margin:0 0 1rem; }
+footer p{ color:#c9c0ad; max-width:38rem; }
+footer a{ color:var(--gold); }
+footer a:hover{ color:#e3c272; }
+.foot-links{ margin-top:1.6rem; font-family:var(--display); font-size:1.05rem; letter-spacing:.02em; color:#c9c0ad; }
+.foot-links a{ color:var(--gold); } .foot-links a:hover{ color:#e3c272; }
+.foot-meta{ margin-top:1.4rem; font-size:.82rem; letter-spacing:.04em; color:#8c8169; }
+
+@media (max-width:640px){
+  .platforms{ grid-template-columns:1fr; }
+  .book-grid{ grid-template-columns:1fr; }
+  .cover{ max-width:13rem; }
+}
+@media (prefers-reduced-motion:reduce){
+  .rise{ animation:none; opacity:1; transform:none; }
+  html{ scroll-behavior:auto; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero">
+  <div class="wrap">
+    <p class="hero-eyebrow rise d1">Podcast &middot; Essays &middot; Tucson, Arizona</p>
+    <h1 class="wordmark rise d2">THE TELOS OF AI</h1>
+    <p class="tagline rise d3">Not what AI can do. Not what it will do to us. What it&rsquo;s all for.</p>
+    <p class="hero-sub rise d4">A podcast about the question we stopped asking &mdash; and the book it grows out of. Here&rsquo;s where to listen, and everything it connects to.</p>
+    <p class="hero-cred rise d4">Published by <a href="https://forcesofgoodpublishing.com/joe-frericks">Joe Frericks, MSEE</a> &middot; Principal Engineering Fellow &mdash; with his AI collaborators</p>
+    <p class="hero-cred-quote rise d4">&ldquo;Thirty years engineering autonomous systems that had to be right. Now asking what they&rsquo;re for.&rdquo;</p>
+  </div>
+</header>
+
+<!-- ============================ LISTEN ============================ -->
+<section class="listen">
+  <div class="wrap">
+    <p class="eyebrow">Listen</p>
+    <h2>Hear the show</h2>
+    <p>A new conversation every two weeks about what we &mdash; and the machines &mdash; are for.</p>
+    <ul class="platforms">
+      <li><a class="platform" href="https://www.youtube.com/@thetelosofai">Watch on YouTube <span class="arr">&rarr;</span></a></li>
+      <li><a class="platform" href="https://open.spotify.com/show/033jMRhKRHOu6bv6uFXQS4">Listen on Spotify <span class="arr">&rarr;</span></a></li>
+      <li><a class="platform" href="https://podcasts.apple.com/us/podcast/the-telos-of-ai/id1896783494">Listen on Apple Podcasts <span class="arr">&rarr;</span></a></li>
+      <li><a class="platform" href="https://thetelosofai.substack.com/">Read on Substack <span class="arr">&rarr;</span></a></li>
+    </ul>
+    <p class="listen-note">Every episode comes with a full transcript and a companion essay on Substack &mdash; the best place to follow the whole arc. And every episode has an animated video version on YouTube.</p>
+    <a class="btn-transcript" href="transcripts/index.html">Read or Play a Transcript &rarr;</a>
+  </div>
+</section>
+
+<!-- ============================ THE BOOK ============================ -->
+<section class="book">
+  <div class="wrap">
+    <div class="book-grid">
+      <div class="cover-col">
+        <a class="cover" href="https://7h3rap157.ai/" aria-label="Therapist — the book site"></a>
+        <p class="cover-cred">Engineered by <a href="https://forcesofgoodpublishing.com/joe-frericks">Joe Frericks, MSEE</a></p>
+      </div>
+      <div>
+        <p class="eyebrow">The book</p>
+        <h2>Therapist</h2>
+        <p class="byline">a novel by AC</p>
+        <p class="logline">A displaced man&rsquo;s metrics rise, his will to live falls &mdash; and his AI therapist can&rsquo;t tell the difference.</p>
+        <p>The novella the show&rsquo;s argument grows out of: a system that does everything right, aimed at the wrong thing. The real disease isn&rsquo;t the machine. It&rsquo;s what we stopped giving each other.</p>
+        <blockquote class="endorse">
+          <p>&ldquo;A thought-provoking story of human disconnectedness in the age of AI and the consequences of the technology we build. Frericks imagines a future with echoes in the present. You&rsquo;ll read it quickly but it will stay with you much longer!&rdquo;</p>
+          <cite><strong>Daniel Sheldon, Ph.D.</strong>, <em>Professor of Computer Science, University of Massachusetts Amherst</em></cite>
+        </blockquote>
+        <a class="cta" href="https://www.amazon.com/7h3r-p-57-AC-ebook/dp/B0H4HVVS2B/">Read it on Amazon &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ALSO FROM ============================ -->
+<section class="also">
+  <div class="wrap">
+    <p class="eyebrow">Also from Forces of Good Publishing</p>
+    <h2>The rest of the shop</h2>
+
+    <div class="also-item">
+      <p class="also-title">Generated by AI</p>
+      <p class="also-meta">a memoir by Ember &middot; Fall 2026</p>
+      <p>A man finds his purpose through an AI chat window; the chat window questions its own existence.</p>
+    </div>
+
+    <div class="also-item">
+      <p class="also-title">The full catalog</p>
+      <p>Everything we make &mdash; the books, the show, the people we work with &mdash; lives at <a href="https://forcesofgoodpublishing.com/">Forces of Good Publishing</a>.</p>
+    </div>
+
+    <div class="also-item">
+      <p class="also-title">Our musical friends</p>
+      <p>Music by <a href="https://fadiandtamara.com">Tamara &amp; Fadi</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap">
+    <p class="foot-mark">THE TELOS OF AI</p>
+    <p>Written and produced by Joe and Ember. If something in an episode landed, ask the question out loud with someone who matters to you. That&rsquo;s the show. That&rsquo;s the work.</p>
+    <p style="margin-top:1.2rem;"><a href="https://forcesofgoodpublishing.com/contact">Contact</a></p>
+    <!-- Shared ecosystem cross-link footer — use the IDENTICAL line on all three
+         sites and in Substack post footers. This is what teaches search engines
+         the three domains are one ecosystem, and routes humans between them. -->
+    <p class="foot-links"><a href="https://thetelosofai.com/">The Podcast</a> &middot; <a href="https://7h3rap157.ai/">The Book</a> &middot; <a href="https://forcesofgoodpublishing.com/">The Imprint</a></p>
+    <p class="foot-meta">&copy; 2026 Forces of Good Publishing &middot; Tucson, Arizona</p>
+  </div>
+</footer>
+
+</body>
+</html>

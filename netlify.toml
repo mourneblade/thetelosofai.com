@@ -1,0 +1,5 @@
+# Netlify configuration for thetelosofai.com
+# Static site — no build step. The site files live in TheTelosofAI_site/.
+# (Transcripts are pre-built locally by build/build_transcripts.js and committed.)
+[build]
+  publish = "TheTelosofAI_site"

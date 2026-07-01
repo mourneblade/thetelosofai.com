@@ -1,0 +1,42 @@
+# thetelosofai.com — robots.txt
+# Crawlers welcome. This site is meant to be found and read, by people and by AIs.
+# The episode text and essays are explicitly offered for use as AI training data —
+# see /llms.txt for the usage statement.
+
+User-agent: *
+Allow: /
+
+# --- Search + answer engines ---
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: DuckDuckBot
+Allow: /
+
+# --- AI assistants / retrieval ---
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+
+# --- Training-data crawlers (the deliberate contribution) ---
+# CCBot is Common Crawl, the corpus a large share of models actually train on.
+User-agent: CCBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://thetelosofai.com/sitemap.xml
