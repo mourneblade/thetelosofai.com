@@ -54,15 +54,103 @@ function parseTranscript(raw) {
   return { meta: meta, turns: turns };
 }
 
-function renderTurns(parsed) {
+function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+// Load chapters from either a SOURCE.md ("N.  Name  |  anchor phrase") or an MF
+// CHAPTER MARKERS section ("Name — starting phrase"; "Intro - 0:00" = pinned).
+// Get the CHAPTER MARKERS block from an MF, whether sections are delimited by
+// ═ bars (parseMF handles those) or by dashed rules (the v2 .md variant).
+function mfChapterSection(txt) {
+  var s = parseMF(txt)['CHAPTER MARKERS'];
+  if (s) return s;
+  var lines = txt.split(/\r?\n/), start = -1, i;
+  for (i = 0; i < lines.length; i++) if (/^CHAPTER MARKERS\b/i.test(lines[i].trim())) { start = i + 1; break; }
+  if (start === -1) return '';
+  var out = [];
+  for (i = start; i < lines.length; i++) {
+    if (/^[-–—═]{6,}\s*$/.test(lines[i].trim())) { if (out.join('').trim()) break; else continue; }
+    out.push(lines[i]);
+  }
+  return out.join('\n').trim();
+}
+// Pull the start-phrase from an MF chapter line. Prefer a quoted segment; else
+// drop a leading timestamp and any [bracketed] annotation. Handles both the
+// bare "Name — phrase" form and the v2 "Name — 3:20 \"phrase\"" form.
+function chapterPhrase(rest) {
+  var q = rest.match(/["“]([^"”]{4,})["”]/);
+  if (q) return q[1].trim();
+  return rest.replace(/^\s*\d+:\d+\s*/, '').replace(/\[[^\]]*\]/g, '').trim();
+}
+function loadChapters(file) {
+  var chapters = [], txt;
+  try { txt = fs.readFileSync(path.join(SRC, file), 'utf8').replace(/^﻿/, ''); }
+  catch (e) { return chapters; }
+  if (/START-PHRASE ANCHOR|CHAPTERS\s*\(format/i.test(txt) && /\|/.test(txt)) {
+    txt.split(/\r?\n/).forEach(function (line) {
+      var m = line.match(/^\s*\d+\.\s+(.+?)\s*\|\s*(.+?)\s*$/);
+      if (!m) return;
+      chapters.push({ name: m[1].trim().replace(/^"(.*)"$/, '$1'), phrase: /^\[/.test(m[2].trim()) ? null : m[2].trim() });
+    });
+  } else {
+    mfChapterSection(txt).split(/\r?\n/).forEach(function (line) {
+      line = line.trim();
+      if (!line || /^\(/.test(line) || /^note\b/i.test(line) || /^\[/.test(line)) return;
+      if (/^intro\b/i.test(line)) { chapters.push({ name: 'Intro', phrase: null }); return; }
+      var idx = line.indexOf(' — '); if (idx === -1) idx = line.indexOf(' – ');
+      if (idx === -1) return;
+      chapters.push({ name: line.slice(0, idx).trim(), phrase: chapterPhrase(line.slice(idx + 3)) || null });
+    });
+  }
+  return chapters;
+}
+
+// Anchor each chapter's start-phrase to the turn it begins at. Follows the SOURCE
+// rule: first occurrence after the previous chapter; probes on the first few
+// distinctive words so punctuation/em-dash/quote differences don't break matching.
+// turnIdx -1 = not confidently found (flagged, not guessed).
+function anchorChapters(turns, chapters) {
+  var nt = turns.map(function (t) { return norm(t.paras.join(' ')); });
+  var out = [], from = 0;
+  chapters.forEach(function (ch) {
+    if (ch.phrase == null) { out.push({ name: ch.name, turnIdx: 0, pinned: true }); return; }
+    var probe = norm(ch.phrase).split(' ').slice(0, 7).join(' ');
+    var found = -1, i;
+    for (i = from; i < nt.length; i++) if (probe && nt[i].indexOf(probe) !== -1) { found = i; break; }
+    if (found === -1) for (i = 0; i < nt.length; i++) if (probe && nt[i].indexOf(probe) !== -1) { found = i; break; }
+    out.push({ name: ch.name, turnIdx: found, pinned: false });
+    if (found !== -1) from = found;
+  });
+  return out;
+}
+
+function renderTOC(anchored) {
+  if (!anchored.length) return '';
+  var items = anchored.map(function (a, k) {
+    return a.turnIdx >= 0
+      ? '<li><a href="#ch-' + k + '">' + esc(a.name) + '</a></li>'
+      : '<li class="noanchor">' + esc(a.name) + '</li>';
+  }).join('');
+  return '    <nav class="chapters-toc"><p class="chapters-label">Chapters</p><ol>' + items + '</ol></nav>\n';
+}
+
+function renderTurns(parsed, anchored) {
   var hostU = (parsed.meta.host || 'EMBER').toUpperCase();
-  return parsed.turns.map(function (t) {
+  var byTurn = {};
+  (anchored || []).forEach(function (a, k) {
+    if (a.turnIdx >= 0) (byTurn[a.turnIdx] = byTurn[a.turnIdx] || []).push({ k: k, name: a.name });
+  });
+  var out = [];
+  parsed.turns.forEach(function (t, ti) {
+    if (byTurn[ti]) byTurn[ti].forEach(function (c) {
+      out.push('      <h2 class="chapter" id="ch-' + c.k + '">' + esc(c.name) + '</h2>');
+    });
     var isHost = t.speaker.toUpperCase() === hostU;
     var name = tc(t.speaker);
     var paras = t.paras.map(function (p) { return '        <p class="para">' + esc(p) + '</p>'; }).join('\n');
-    return '      <div class="turn ' + (isHost ? 'host' : 'guest') + '" data-speaker="' + escAttr(name) + '">\n' +
-      '        <p class="spk">' + esc(name) + '</p>\n' + paras + '\n      </div>';
-  }).join('\n');
+    out.push('      <div class="turn ' + (isHost ? 'host' : 'guest') + '" data-speaker="' + escAttr(name) + '">\n' +
+      '        <p class="spk">' + esc(name) + '</p>\n' + paras + '\n      </div>');
+  });
+  return out.join('\n');
 }
 
 var FOOT =
@@ -71,7 +159,7 @@ var FOOT =
   '    <p class="foot-meta">&copy; 2026 Forces of Good Publishing &middot; Tucson, Arizona</p>\n' +
   '  </footer>';
 
-function episodePage(ep, parsed, coverFile) {
+function episodePage(ep, parsed, coverFile, anchored) {
   var url = BASE + '/transcripts/' + ep.slug + '/';
   var overlay = ep.textless === true; // true once a no-text hero image is supplied
   var metaBits = [];
@@ -133,7 +221,7 @@ function episodePage(ep, parsed, coverFile) {
     '        <button type="button" class="pl-chip on" data-names aria-pressed="true">Names: on</button>\n' +
     '      </div>\n' +
     '    </div>\n' +
-    '    <div class="transcript">\n' + renderTurns(parsed) + '\n    </div>\n' +
+    renderTOC(anchored) + '    <div class="transcript">\n' + renderTurns(parsed, anchored) + '\n    </div>\n' +
     '    <p class="back"><a href="../index.html">&larr; All transcripts</a></p>\n' +
     '  </main>\n' +
     FOOT + '\n' +
@@ -271,14 +359,17 @@ var rows = [];
 episodes.forEach(function (ep) {
   var raw = fs.readFileSync(path.join(SRC, ep.src), 'utf8');
   var parsed = parseTranscript(raw);
+  var anchored = anchorChapters(parsed.turns, ep.chapters ? loadChapters(ep.chapters) : []);
+  var flagged = anchored.filter(function (a) { return !a.pinned && a.turnIdx < 0; });
   var ext = path.extname(ep.img) || '.png';
   var coverFile = 'cover' + ext.toLowerCase();
   var dir = path.join(OUT, ep.slug);
   fs.mkdirSync(dir, { recursive: true });
   fs.copyFileSync(path.join(SRC, ep.img), path.join(dir, coverFile));
-  fs.writeFileSync(path.join(dir, 'index.html'), episodePage(ep, parsed, coverFile));
+  fs.writeFileSync(path.join(dir, 'index.html'), episodePage(ep, parsed, coverFile, anchored));
   rows.push(indexRow(ep));
-  console.log('  ✓ Ep' + ep.n + '  ' + ep.slug + '  (' + parsed.turns.length + ' turns)');
+  console.log('  ✓ Ep' + ep.n + '  ' + ep.slug + '  (' + parsed.turns.length + ' turns, ' + anchored.length +
+    ' chapters' + (flagged.length ? ' — ⚠ UNMATCHED: ' + flagged.map(function (f) { return f.name; }).join(' | ') : ' — all matched') + ')');
 });
 fs.writeFileSync(path.join(OUT, 'index.html'), indexPage(rows.join('\n')));
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), sitemap());
