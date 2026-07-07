@@ -133,6 +133,33 @@ function renderTOC(anchored) {
   return '    <nav class="chapters-toc"><p class="chapters-label">Chapters</p><ol>' + items + '</ol></nav>\n';
 }
 
+// Phase 2 — "Watch on YouTube": the FINAL YouTube chapter list (EpN_chapters.txt,
+// "M:SS Title") turned into deep-links (watch?v=ID&t=SECs). Video IDs verified from
+// the Season-1 playlist RSS. Episodes with no video yet (Ep7) get no block.
+var YT = { 1: 'kUp8xtcrCj8', 2: 'nQxQWQUFK9A', 3: 'VT-8snBb510', 4: 'puRTy4rxkPc', 5: 'qjaMdP4uErc', 6: 'CSeZMCMIh40', 7: 'QhocOXuvlYw' };
+function loadYtChapters(n) {
+  var out = [], txt;
+  try { txt = fs.readFileSync(path.join(SRC, 'Ep' + n + '_chapters.txt'), 'utf8').replace(/^﻿/, ''); }
+  catch (e) { return out; }
+  txt.split(/\r?\n/).forEach(function (line) {
+    var m = line.trim().match(/^(\d+):(\d{2})(?::(\d{2}))?\s+(.+)$/);
+    if (!m) return;
+    var sec = m[3] ? (+m[1] * 3600 + +m[2] * 60 + +m[3]) : (+m[1] * 60 + +m[2]);
+    out.push({ sec: sec, ts: m[3] ? m[1] + ':' + m[2] + ':' + m[3] : m[1] + ':' + m[2], title: m[4].trim() });
+  });
+  return out;
+}
+function renderWatch(ep) {
+  if (!YT[ep.n]) return '';
+  var chs = loadYtChapters(ep.n);
+  if (!chs.length) return '';
+  var base = 'https://www.youtube.com/watch?v=' + YT[ep.n];
+  var items = chs.map(function (c) {
+    return '<li><a href="' + base + '&t=' + c.sec + 's" target="_blank" rel="noopener"><span class="yt-ts">' + c.ts + '</span> ' + esc(c.title) + '</a></li>';
+  }).join('');
+  return '    <nav class="watch-yt"><p class="chapters-label"><a href="' + base + '&t=0s" target="_blank" rel="noopener">&#9654; Watch on YouTube</a></p><ol>' + items + '</ol></nav>\n';
+}
+
 function renderTurns(parsed, anchored) {
   var hostU = (parsed.meta.host || 'EMBER').toUpperCase();
   var byTurn = {};
@@ -221,7 +248,7 @@ function episodePage(ep, parsed, coverFile, anchored) {
     '        <button type="button" class="pl-chip on" data-names aria-pressed="true">Names: on</button>\n' +
     '      </div>\n' +
     '    </div>\n' +
-    renderTOC(anchored) + '    <div class="transcript">\n' + renderTurns(parsed, anchored) + '\n    </div>\n' +
+    renderTOC(anchored) + renderWatch(ep) + '    <div class="transcript">\n' + renderTurns(parsed, anchored) + '\n    </div>\n' +
     '    <p class="back"><a href="../index.html">&larr; All transcripts</a></p>\n' +
     '  </main>\n' +
     FOOT + '\n' +
