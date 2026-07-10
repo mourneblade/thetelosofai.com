@@ -35,23 +35,44 @@ function tc(s) {
   }).join(' ');
 }
 
+// Split a byline ("Ember and Joe") into names. Episodes have more than one host,
+// so the host is a LIST — a single string can never match a speaker.
+function splitNames(s) {
+  return String(s).replace(/[.]+$/, '').split(/\s*(?:,|&|\band\b)\s*/i)
+    .map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+// Every non-empty block of the source must land somewhere. A block that appears
+// before the first "SPEAKER:" line (Ep3/Ep4 open on an unattributed narrator
+// paragraph) used to fall through both arms of the if and vanish from the page.
+// It is now opened as a NARRATOR turn, matching how Ep5+ label the same content.
+// `dropped` stays as a tripwire: if a future regex change orphans a block, the
+// preflight fails loudly instead of quietly deleting the author's words.
 function parseTranscript(raw) {
   raw = raw.replace(/^﻿/, '');
   var blocks = raw.split(/\r?\n\s*\r?\n/).map(function (b) {
     return b.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
   }).filter(Boolean);
 
-  var meta = {}, turns = [], cur = null, m;
+  var meta = { hosts: [] }, turns = [], cur = null, m, consumed = 0;
   for (var idx = 0; idx < blocks.length; idx++) {
     var b = blocks[idx];
-    if (idx === 0) continue; // first block is the title line (manifest owns the title)
-    if ((m = b.match(/^hosted by\s+(.+)$/i))) { meta.host = m[1].replace(/[.]+$/, '').trim(); continue; }
-    if ((m = b.match(/^guest:?\s+(.+)$/i))) { meta.guest = m[1].replace(/[.]+$/, '').trim(); continue; }
+    if (idx === 0) { consumed++; continue; } // title line (manifest owns the title)
+    // Tolerate "Hosted by X" and "Hosted by:  X" — the colon silently killed the byline.
+    if ((m = b.match(/^hosted by\b\s*:?\s*(.+)$/i))) {
+      meta.hostLine = m[1].replace(/[.]+$/, '').trim();
+      meta.hosts = splitNames(m[1]);
+      consumed++; continue;
+    }
+    if ((m = b.match(/^guests?\b\s*:?\s*(.+)$/i))) { meta.guest = m[1].replace(/[.]+$/, '').trim(); consumed++; continue; }
     m = b.match(/^([A-Z][A-Z.\-'’ ]{0,22}?):\s+([\s\S]+)$/);
     if (m) { cur = { speaker: m[1].trim(), paras: [m[2].trim()] }; turns.push(cur); }
     else if (cur) { cur.paras.push(b); }
+    else { cur = { speaker: 'NARRATOR', paras: [b] }; turns.push(cur); } // pre-speaker prose
+    consumed++;
   }
-  return { meta: meta, turns: turns };
+  var paras = turns.reduce(function (n, t) { return n + t.paras.length; }, 0);
+  return { meta: meta, turns: turns, blocks: blocks.length, dropped: blocks.length - consumed, paras: paras };
 }
 
 function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
@@ -82,9 +103,11 @@ function chapterPhrase(rest) {
   return rest.replace(/^\s*\d+:\d+\s*/, '').replace(/\[[^\]]*\]/g, '').trim();
 }
 function loadChapters(file) {
-  var chapters = [], txt;
-  try { txt = fs.readFileSync(path.join(SRC, file), 'utf8').replace(/^﻿/, ''); }
-  catch (e) { return chapters; }
+  var chapters = [], p = path.join(SRC, file);
+  // Was: catch -> return []. A typo'd filename produced zero chapters and the
+  // report cheerfully said "all matched". Absent is now an error, not an empty list.
+  if (!fs.existsSync(p)) throw new Error('chapters source not found: ' + file);
+  var txt = fs.readFileSync(p, 'utf8').replace(/^﻿/, '');
   if (/START-PHRASE ANCHOR|CHAPTERS\s*\(format/i.test(txt) && /\|/.test(txt)) {
     txt.split(/\r?\n/).forEach(function (line) {
       var m = line.match(/^\s*\d+\.\s+(.+?)\s*\|\s*(.+?)\s*$/);
@@ -126,15 +149,28 @@ function anchorChapters(turns, chapters) {
   chapters.forEach(function (ch) {
     if (ch.phrase == null) { out.push({ name: ch.name, turnIdx: 0, paraIdx: 0, pinned: true }); return; }
     var probe = norm(ch.phrase).split(' ').slice(0, 7).join(' ');
-    var hit = probe ? (seekPhrase(np, fromT, fromP, probe) || seekPhrase(np, 0, 0, probe)) : null;
-    // Last resort: a probe straddling a paragraph break still matches the joined turn.
-    if (!hit && probe) {
-      for (var i = 0; i < nt.length; i++) if (nt[i].indexOf(probe) !== -1) { hit = { t: i, p: 0 }; break; }
+    var hit = probe ? seekPhrase(np, fromT, fromP, probe) : null;
+    var rescan = false;
+    // Fallbacks rescan from the top, so they can land BEHIND the previous chapter.
+    // Flag it — the preflight asserts monotonicity rather than trusting the match.
+    if (!hit && probe) { hit = seekPhrase(np, 0, 0, probe); rescan = !!hit; }
+    if (!hit && probe) { // a probe straddling a paragraph break still matches the joined turn
+      for (var i = 0; i < nt.length; i++) if (nt[i].indexOf(probe) !== -1) { hit = { t: i, p: 0 }; rescan = true; break; }
     }
-    out.push({ name: ch.name, turnIdx: hit ? hit.t : -1, paraIdx: hit ? hit.p : -1, pinned: false });
+    out.push({ name: ch.name, turnIdx: hit ? hit.t : -1, paraIdx: hit ? hit.p : -1, pinned: false, rescan: rescan });
     if (hit) { fromT = hit.t; fromP = hit.p + 1; }
   });
   return out;
+}
+
+// The sun/gem border tracks the show's ANCHOR VOICE — the first name in the byline —
+// not host-vs-guest semantics. Colouring every host sun would flatten Ep5/Ep6 (which
+// have no guest) to a single colour, and would make Joe gem in Ep1 ("Hosted by Ember")
+// but sun in Ep2+. The byline itself still names every host. Falls back to Ember only
+// if a transcript carries no byline; the preflight rejects a byline naming a non-speaker.
+function anchorVoice(parsed) {
+  var names = (parsed.meta.hosts && parsed.meta.hosts.length) ? parsed.meta.hosts : ['Ember'];
+  return names[0].toUpperCase();
 }
 
 function renderTOC(anchored) {
@@ -151,10 +187,13 @@ function renderTOC(anchored) {
 // "M:SS Title") turned into deep-links (watch?v=ID&t=SECs). Video IDs verified from
 // the Season-1 playlist RSS. Episodes with no video yet (Ep7) get no block.
 var YT = { 1: 'kUp8xtcrCj8', 2: 'nQxQWQUFK9A', 3: 'VT-8snBb510', 4: 'puRTy4rxkPc', 5: 'qjaMdP4uErc', 6: 'CSeZMCMIh40', 7: 'QhocOXuvlYw' };
+function ytChaptersPath(n) { return path.join(SRC, 'Ep' + n + '_chapters.txt'); }
 function loadYtChapters(n) {
-  var out = [], txt;
-  try { txt = fs.readFileSync(path.join(SRC, 'Ep' + n + '_chapters.txt'), 'utf8').replace(/^﻿/, ''); }
-  catch (e) { return out; }
+  var out = [], p = ytChaptersPath(n);
+  // Was: catch -> return [], which made the whole Watch box vanish without a word.
+  // The filename is a convention, not a manifest field, so a rename is invisible.
+  if (!fs.existsSync(p)) throw new Error('Ep' + n + ' has a YouTube id but no Ep' + n + '_chapters.txt');
+  var txt = fs.readFileSync(p, 'utf8').replace(/^﻿/, '');
   txt.split(/\r?\n/).forEach(function (line) {
     var m = line.trim().match(/^(\d+):(\d{2})(?::(\d{2}))?\s+(.+)$/);
     if (!m) return;
@@ -181,7 +220,7 @@ function renderWatch(ep) {
 // re-announce a speaker who never stopped talking. A turn with no mid-turn anchor
 // emits exactly the markup it always did.
 function renderTurns(parsed, anchored) {
-  var hostU = (parsed.meta.host || 'EMBER').toUpperCase();
+  var anchor = anchorVoice(parsed);
   var byTurn = {};
   (anchored || []).forEach(function (a, k) {
     if (a.turnIdx < 0) return;
@@ -190,7 +229,7 @@ function renderTurns(parsed, anchored) {
   });
   var out = [];
   parsed.turns.forEach(function (t, ti) {
-    var isHost = t.speaker.toUpperCase() === hostU;
+    var isHost = t.speaker.toUpperCase() === anchor;
     var name = tc(t.speaker);
     var marks = byTurn[ti] || {};
     var frag = [], isFirst = true;
@@ -226,7 +265,7 @@ function episodePage(ep, parsed, coverFile, anchored) {
   var url = BASE + '/transcripts/' + ep.slug + '/';
   var overlay = ep.textless === true; // true once a no-text hero image is supplied
   var metaBits = [];
-  if (parsed.meta.host) metaBits.push('Hosted by ' + esc(parsed.meta.host));
+  if (parsed.meta.hostLine) metaBits.push('Hosted by ' + esc(parsed.meta.hostLine));
   if (parsed.meta.guest) metaBits.push('Guest: ' + esc(parsed.meta.guest));
   metaBits.push('Episode ' + ep.n);
   var ld = {
@@ -417,13 +456,82 @@ function updateLlmsFull() {
   else console.log('  ✓ llms-full.txt (already current)');
 }
 
+// ---- preflight ----
+// Everything this generator loads used to degrade to an empty list on failure, so a
+// renamed file or a drifted format removed a feature and reported success. Each check
+// below turns one of those silent omissions into a hard stop. `node build/build_transcripts.js --check`
+// runs the checks and writes nothing.
+var ERRORS = [], WARNINGS = [];
+function err(ep, msg) { ERRORS.push('Ep' + ep.n + ': ' + msg); }
+function warn(ep, msg) { WARNINGS.push('Ep' + ep.n + ': ' + msg); }
+
+function preflight(ep, parsed, anchored) {
+  ['title', 'subtitle', 'desc', 'slug', 'src', 'img'].forEach(function (k) {
+    if (!ep[k]) err(ep, 'manifest is missing `' + k + '`');
+  });
+  if (!fs.existsSync(path.join(SRC, ep.img))) err(ep, 'hero image not found: ' + ep.img);
+
+  // No block of the author's transcript may be dropped on the floor.
+  if (parsed.dropped !== 0) err(ep, parsed.dropped + ' source block(s) dropped by parseTranscript');
+  if (!parsed.turns.length) err(ep, 'no speaker turns parsed — check the "SPEAKER:" format');
+
+  // A byline that names someone who never speaks silently repaints every turn .guest.
+  var speakers = {};
+  parsed.turns.forEach(function (t) { speakers[t.speaker.toUpperCase()] = true; });
+  if (!parsed.meta.hostLine) err(ep, 'no "Hosted by" line found — byline would be dropped');
+  (parsed.meta.hosts || []).forEach(function (h) {
+    if (!speakers[h.toUpperCase()]) err(ep, 'byline names host "' + h + '" but no such speaker exists — all turns would render as guest');
+  });
+
+  // Chapters: present means non-empty, matched, and in order.
+  if (ep.chapters) {
+    if (!anchored.length) err(ep, 'chapters source parsed to zero chapters: ' + ep.chapters);
+    var unmatched = anchored.filter(function (a) { return !a.pinned && a.turnIdx < 0; });
+    if (unmatched.length) err(ep, 'UNMATCHED chapter anchor(s): ' + unmatched.map(function (u) { return u.name; }).join(' | '));
+    anchored.filter(function (a) { return a.rescan; }).forEach(function (a) {
+      warn(ep, 'chapter "' + a.name + '" matched only on a global rescan — verify its position');
+    });
+    for (var i = 1; i < anchored.length; i++) {
+      var p = anchored[i - 1], c = anchored[i];
+      if (p.turnIdx < 0 || c.turnIdx < 0) continue;
+      if (c.turnIdx < p.turnIdx || (c.turnIdx === p.turnIdx && c.paraIdx < p.paraIdx)) {
+        err(ep, 'chapter "' + c.name + '" anchors BEFORE "' + p.name + '" — the TOC would jump backwards');
+      }
+    }
+  } else warn(ep, 'no `chapters` key — the table of contents is absent');
+
+  // YouTube: an id and a timestamps file must arrive together, or neither.
+  var hasId = Object.prototype.hasOwnProperty.call(YT, ep.n);
+  var hasTs = fs.existsSync(ytChaptersPath(ep.n));
+  if (hasId && !/^[A-Za-z0-9_-]{11}$/.test(YT[ep.n])) err(ep, 'YouTube id "' + YT[ep.n] + '" is not a valid 11-character id');
+  if (hasId && !hasTs) err(ep, 'YouTube id set but Ep' + ep.n + '_chapters.txt is missing — the Watch box would vanish');
+  if (!hasId && hasTs) warn(ep, 'Ep' + ep.n + '_chapters.txt exists but no YouTube id — no Watch box (expected if the video is unreleased)');
+
+  if (!ep.mf) warn(ep, 'no `mf` key — the companion essay is omitted from llms-full.txt');
+}
+
 // ---- run ----
-var rows = [];
-episodes.forEach(function (ep) {
-  var raw = fs.readFileSync(path.join(SRC, ep.src), 'utf8');
-  var parsed = parseTranscript(raw);
+var CHECK_ONLY = process.argv.indexOf('--check') !== -1;
+var slugs = {};
+var built = episodes.map(function (ep) {
+  if (slugs[ep.slug]) err(ep, 'duplicate slug "' + ep.slug + '" (would overwrite Ep' + slugs[ep.slug] + ')');
+  slugs[ep.slug] = ep.n;
+  var parsed = parseTranscript(fs.readFileSync(path.join(SRC, ep.src), 'utf8'));
   var anchored = anchorChapters(parsed.turns, ep.chapters ? loadChapters(ep.chapters) : []);
-  var flagged = anchored.filter(function (a) { return !a.pinned && a.turnIdx < 0; });
+  preflight(ep, parsed, anchored);
+  return { ep: ep, parsed: parsed, anchored: anchored };
+});
+
+WARNINGS.forEach(function (w) { console.log('  ⚠ ' + w); });
+if (ERRORS.length) {
+  console.error('\n✗ preflight failed — nothing written:\n' + ERRORS.map(function (e) { return '    ' + e; }).join('\n') + '\n');
+  process.exit(1);
+}
+if (CHECK_ONLY) { console.log('\n✓ preflight passed for ' + episodes.length + ' episodes (--check: nothing written).'); return; }
+
+var rows = [];
+built.forEach(function (b) {
+  var ep = b.ep, parsed = b.parsed, anchored = b.anchored;
   var ext = path.extname(ep.img) || '.png';
   var coverFile = 'cover' + ext.toLowerCase();
   var dir = path.join(OUT, ep.slug);
@@ -432,9 +540,10 @@ episodes.forEach(function (ep) {
   fs.writeFileSync(path.join(dir, 'index.html'), episodePage(ep, parsed, coverFile, anchored));
   rows.push(indexRow(ep));
   var mid = anchored.filter(function (a) { return !a.pinned && a.paraIdx > 0; }).length;
-  console.log('  ✓ Ep' + ep.n + '  ' + ep.slug + '  (' + parsed.turns.length + ' turns, ' + anchored.length +
-    ' chapters' + (flagged.length ? ' — ⚠ UNMATCHED: ' + flagged.map(function (f) { return f.name; }).join(' | ') : ' — all matched') +
-    (mid ? ', ' + mid + ' mid-turn' : '') + ')');
+  var narr = parsed.turns.filter(function (t) { return t.speaker.toUpperCase() === 'NARRATOR'; }).length;
+  console.log('  ✓ Ep' + ep.n + '  ' + ep.slug + '  (' + parsed.turns.length + ' turns, ' + parsed.paras + ' paras, ' +
+    anchored.length + ' chapters — all matched' + (mid ? ', ' + mid + ' mid-turn' : '') +
+    ', hosts: ' + (parsed.meta.hosts || []).join('+') + (narr ? ', narrator×' + narr : '') + ')');
 });
 fs.writeFileSync(path.join(OUT, 'index.html'), indexPage(rows.join('\n')));
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), sitemap());
