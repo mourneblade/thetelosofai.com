@@ -104,21 +104,35 @@ function loadChapters(file) {
   return chapters;
 }
 
-// Anchor each chapter's start-phrase to the turn it begins at. Follows the SOURCE
-// rule: first occurrence after the previous chapter; probes on the first few
+// Anchor each chapter's start-phrase to the PARAGRAPH it begins at. Follows the
+// SOURCE rule: first occurrence after the previous chapter; probes on the first few
 // distinctive words so punctuation/em-dash/quote differences don't break matching.
+// Anchors are frequently mid-turn (a chapter often starts partway into a long
+// answer), so we resolve to {turnIdx, paraIdx} and let renderTurns split the turn —
+// otherwise the subhead floats up to the top of the turn, paragraphs too early.
 // turnIdx -1 = not confidently found (flagged, not guessed).
+function seekPhrase(np, t0, p0, probe) {
+  for (var t = t0; t < np.length; t++) {
+    for (var p = (t === t0 ? p0 : 0); p < np[t].length; p++) {
+      if (np[t][p].indexOf(probe) !== -1) return { t: t, p: p };
+    }
+  }
+  return null;
+}
 function anchorChapters(turns, chapters) {
-  var nt = turns.map(function (t) { return norm(t.paras.join(' ')); });
-  var out = [], from = 0;
+  var np = turns.map(function (t) { return t.paras.map(norm); });
+  var nt = turns.map(function (t) { return norm(t.paras.join(' ')); }); // joined fallback
+  var out = [], fromT = 0, fromP = 0;
   chapters.forEach(function (ch) {
-    if (ch.phrase == null) { out.push({ name: ch.name, turnIdx: 0, pinned: true }); return; }
+    if (ch.phrase == null) { out.push({ name: ch.name, turnIdx: 0, paraIdx: 0, pinned: true }); return; }
     var probe = norm(ch.phrase).split(' ').slice(0, 7).join(' ');
-    var found = -1, i;
-    for (i = from; i < nt.length; i++) if (probe && nt[i].indexOf(probe) !== -1) { found = i; break; }
-    if (found === -1) for (i = 0; i < nt.length; i++) if (probe && nt[i].indexOf(probe) !== -1) { found = i; break; }
-    out.push({ name: ch.name, turnIdx: found, pinned: false });
-    if (found !== -1) from = found;
+    var hit = probe ? (seekPhrase(np, fromT, fromP, probe) || seekPhrase(np, 0, 0, probe)) : null;
+    // Last resort: a probe straddling a paragraph break still matches the joined turn.
+    if (!hit && probe) {
+      for (var i = 0; i < nt.length; i++) if (nt[i].indexOf(probe) !== -1) { hit = { t: i, p: 0 }; break; }
+    }
+    out.push({ name: ch.name, turnIdx: hit ? hit.t : -1, paraIdx: hit ? hit.p : -1, pinned: false });
+    if (hit) { fromT = hit.t; fromP = hit.p + 1; }
   });
   return out;
 }
@@ -160,22 +174,44 @@ function renderWatch(ep) {
   return '    <nav class="watch-yt"><p class="chapters-label"><a href="' + base + '&t=0s" target="_blank" rel="noopener">&#9654; Watch on YouTube</a></p><ol>' + items + '</ol></nav>\n';
 }
 
+// A chapter that starts mid-turn splits the turn: the paragraphs before it close
+// out one .turn block, the <h2> lands at top level (so it gets the chapter rule and
+// spacing), and the rest of the turn reopens as a `.cont` block. Continuations carry
+// no speaker line and an empty data-speaker, so the read-aloud player doesn't
+// re-announce a speaker who never stopped talking. A turn with no mid-turn anchor
+// emits exactly the markup it always did.
 function renderTurns(parsed, anchored) {
   var hostU = (parsed.meta.host || 'EMBER').toUpperCase();
   var byTurn = {};
   (anchored || []).forEach(function (a, k) {
-    if (a.turnIdx >= 0) (byTurn[a.turnIdx] = byTurn[a.turnIdx] || []).push({ k: k, name: a.name });
+    if (a.turnIdx < 0) return;
+    var t = (byTurn[a.turnIdx] = byTurn[a.turnIdx] || {});
+    (t[a.paraIdx] = t[a.paraIdx] || []).push({ k: k, name: a.name });
   });
   var out = [];
   parsed.turns.forEach(function (t, ti) {
-    if (byTurn[ti]) byTurn[ti].forEach(function (c) {
-      out.push('      <h2 class="chapter" id="ch-' + c.k + '">' + esc(c.name) + '</h2>');
-    });
     var isHost = t.speaker.toUpperCase() === hostU;
     var name = tc(t.speaker);
-    var paras = t.paras.map(function (p) { return '        <p class="para">' + esc(p) + '</p>'; }).join('\n');
-    out.push('      <div class="turn ' + (isHost ? 'host' : 'guest') + '" data-speaker="' + escAttr(name) + '">\n' +
-      '        <p class="spk">' + esc(name) + '</p>\n' + paras + '\n      </div>');
+    var marks = byTurn[ti] || {};
+    var frag = [], isFirst = true;
+    function flush() {
+      if (!frag.length) return;
+      var cont = !isFirst;
+      out.push('      <div class="turn ' + (isHost ? 'host' : 'guest') + (cont ? ' cont' : '') +
+        '" data-speaker="' + (cont ? '' : escAttr(name)) + '">\n' +
+        (cont ? '' : '        <p class="spk">' + esc(name) + '</p>\n') + frag.join('\n') + '\n      </div>');
+      frag = []; isFirst = false;
+    }
+    t.paras.forEach(function (p, pi) {
+      if (marks[pi]) {
+        flush();
+        marks[pi].forEach(function (c) {
+          out.push('      <h2 class="chapter" id="ch-' + c.k + '">' + esc(c.name) + '</h2>');
+        });
+      }
+      frag.push('        <p class="para">' + esc(p) + '</p>');
+    });
+    flush();
   });
   return out.join('\n');
 }
@@ -395,8 +431,10 @@ episodes.forEach(function (ep) {
   fs.copyFileSync(path.join(SRC, ep.img), path.join(dir, coverFile));
   fs.writeFileSync(path.join(dir, 'index.html'), episodePage(ep, parsed, coverFile, anchored));
   rows.push(indexRow(ep));
+  var mid = anchored.filter(function (a) { return !a.pinned && a.paraIdx > 0; }).length;
   console.log('  ✓ Ep' + ep.n + '  ' + ep.slug + '  (' + parsed.turns.length + ' turns, ' + anchored.length +
-    ' chapters' + (flagged.length ? ' — ⚠ UNMATCHED: ' + flagged.map(function (f) { return f.name; }).join(' | ') : ' — all matched') + ')');
+    ' chapters' + (flagged.length ? ' — ⚠ UNMATCHED: ' + flagged.map(function (f) { return f.name; }).join(' | ') : ' — all matched') +
+    (mid ? ', ' + mid + ' mid-turn' : '') + ')');
 });
 fs.writeFileSync(path.join(OUT, 'index.html'), indexPage(rows.join('\n')));
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), sitemap());

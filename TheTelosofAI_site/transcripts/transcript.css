@@ -122,6 +122,8 @@ main{ flex:1; }
 .chapter{ font-family:var(--display); font-weight:600; font-size:clamp(1.35rem,3vw,1.85rem); color:var(--sun-deep);
   line-height:1.1; margin:2.2rem 0 .9rem; padding-top:1.3rem; border-top:1px solid var(--rule); scroll-margin-top:1rem; }
 .transcript .chapter:first-child{ border-top:0; padding-top:0; margin-top:.3rem; }
+/* a turn resumed after a mid-turn chapter break — same speaker, so no repeated label */
+.turn.cont{ padding-top:0; }
 
 /* ---- Phase 2: watch-on-YouTube chapter deep-links ---- */
 .watch-yt{ max-width:var(--content); margin:1rem var(--gutter) 0; padding:1rem 1.25rem;
