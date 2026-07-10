@@ -185,8 +185,9 @@ function renderTOC(anchored) {
 
 // Phase 2 — "Watch on YouTube": the FINAL YouTube chapter list (EpN_chapters.txt,
 // "M:SS Title") turned into deep-links (watch?v=ID&t=SECs). Video IDs verified from
-// the Season-1 playlist RSS. Episodes with no video yet (Ep7) get no block.
-var YT = { 1: 'kUp8xtcrCj8', 2: 'nQxQWQUFK9A', 3: 'VT-8snBb510', 4: 'puRTy4rxkPc', 5: 'qjaMdP4uErc', 6: 'CSeZMCMIh40', 7: 'QhocOXuvlYw' };
+// the Season-1 playlist RSS. An episode with no id yet gets no block; the preflight
+// rejects an id without its timestamps file, so the block can't vanish by accident.
+var YT = { 1: 'kUp8xtcrCj8', 2: 'nQxQWQUFK9A', 3: 'VT-8snBb510', 4: 'puRTy4rxkPc', 5: 'qjaMdP4uErc', 6: 'CSeZMCMIh40', 7: 'QhocOXuvlYw', 8: 'IWOBp90JSgI' };
 function ytChaptersPath(n) { return path.join(SRC, 'Ep' + n + '_chapters.txt'); }
 function loadYtChapters(n) {
   var out = [], p = ytChaptersPath(n);
